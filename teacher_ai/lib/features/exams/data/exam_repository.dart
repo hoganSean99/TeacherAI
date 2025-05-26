@@ -54,4 +54,12 @@ class ExamRepository {
       await isar.examResults.putAll(results);
     });
   }
+
+  Future<List<ExamResult>> getResultsForStudent(int studentId) async {
+    return await isar.examResults.filter().studentIdEqualTo(studentId).findAll();
+  }
+
+  Future<Exam?> getExamById(int examId) async {
+    return await isar.exams.filter().idEqualTo(examId).findFirst();
+  }
 } 

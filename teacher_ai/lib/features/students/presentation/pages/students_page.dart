@@ -94,9 +94,9 @@ class _StudentsPageState extends ConsumerState<StudentsPage> {
       color: const Color(0xFFF7F8FA), // Apple-style subtle background
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
             // Apple-style glassmorphic header card
             Center(
               child: Container(
@@ -116,37 +116,37 @@ class _StudentsPageState extends ConsumerState<StudentsPage> {
                   border: Border.all(color: Colors.white.withOpacity(0.09), width: 1),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Student Management',
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Student Management',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: -1,
                         fontSize: 28,
-                      ),
-                    ),
+                ),
+              ),
                     TextButton.icon(
                       style: TextButton.styleFrom(
                         backgroundColor: Colors.white.withOpacity(0.55),
-                        foregroundColor: accentColor,
+                  foregroundColor: accentColor,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                         padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
                         shadowColor: accentColor.withOpacity(0.10),
                         elevation: 0,
-                      ),
-                      onPressed: () => _showAddOrEditStudentDialog(),
-                      icon: Icon(Icons.add, color: accentColor),
-                      label: const Text('Add Student', style: TextStyle(fontWeight: FontWeight.w600)),
-                    ),
-                  ],
                 ),
+                onPressed: () => _showAddOrEditStudentDialog(),
+                icon: Icon(Icons.add, color: accentColor),
+                      label: const Text('Add Student', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
               ),
             ),
             const SizedBox(height: 10),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isSmall = constraints.maxWidth < 800;
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmall = constraints.maxWidth < 800;
                 return Center(
                   child: Container(
                     constraints: const BoxConstraints(maxWidth: 1300),
@@ -164,83 +164,83 @@ class _StudentsPageState extends ConsumerState<StudentsPage> {
                         border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
                       ),
                       margin: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
-                      child: Padding(
+                  child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
                           child: LayoutBuilder(
                             builder: (context, tableConstraints) {
                               final minTableWidth = 900.0;
                               final tableWidth = tableConstraints.maxWidth < minTableWidth ? minTableWidth : tableConstraints.maxWidth;
                               return SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
+                        scrollDirection: Axis.horizontal,
                                 child: SizedBox(
                                   width: tableWidth,
-                                  child: Column(
-                                    children: [
-                                      // Table Header
-                                      Padding(
+                          child: Column(
+                            children: [
+                              // Table Header
+                              Padding(
                                         padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 18),
-                                        child: Row(
-                                          children: [
+                                child: Row(
+                                  children: [
                                             SizedBox(width: 200, child: _HeaderCell('NAME', apple: true)),
                                             SizedBox(width: 240, child: _HeaderCell('EMAIL', apple: true)),
                                             SizedBox(width: 320, child: _HeaderCell('SUBJECTS', apple: true)),
                                             SizedBox(width: 120, child: _HeaderCell('ATTENDANCE', apple: true)),
                                             SizedBox(width: 110, child: _HeaderCell('GRADE', apple: true)),
                                             SizedBox(width: 100, child: _HeaderCell('ACTIONS', apple: true)),
-                                          ],
-                                        ),
-                                      ),
+                                  ],
+                                ),
+                              ),
                                       Divider(height: 1, color: Colors.grey[200]),
-                                      if (isLoading)
-                                        const Padding(
-                                          padding: EdgeInsets.symmetric(vertical: 32),
-                                          child: CircularProgressIndicator(),
-                                        )
-                                      else if (students.isEmpty)
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(vertical: 32),
-                                          child: Text('No students yet.', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
-                                        )
-                                      else
-                                        ...students.map((student) => Padding(
+                              if (isLoading)
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 32),
+                                  child: CircularProgressIndicator(),
+                                )
+                              else if (students.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 32),
+                                  child: Text('No students yet.', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
+                                )
+                              else
+                                ...students.map((student) => Padding(
                                           padding: const EdgeInsets.symmetric(vertical: 4),
-                                          child: _StudentRow(
-                                            key: ValueKey(student.id),
-                                            student: student,
-                                            onDelete: () async {
-                                              try {
-                                                await widget.studentRepository.deleteStudent(student.id);
-                                                await _loadStudents();
-                                              } catch (e) {
-                                                if (mounted) {
-                                                  ScaffoldMessenger.of(context).showSnackBar(
-                                                    SnackBar(content: Text('Error deleting student: $e')),
-                                                  );
-                                                }
-                                              }
-                                            },
-                                            onEdit: () => _showAddOrEditStudentDialog(student: student),
+                                  child: _StudentRow(
+                                    key: ValueKey(student.id),
+                                    student: student,
+                                    onDelete: () async {
+                                      try {
+                                        await widget.studentRepository.deleteStudent(student.id);
+                                        await _loadStudents();
+                                      } catch (e) {
+                                        if (mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Error deleting student: $e')),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    onEdit: () => _showAddOrEditStudentDialog(student: student),
                                             showAttendance: true,
                                             showGrade: true,
                                             apple: true,
-                                          ),
-                                        )),
-                                    ],
                                   ),
+                                )),
+                            ],
+                          ),
                                 ),
                               );
                             },
-                          ),
                         ),
                       ),
                     ),
                   ),
-                );
-              },
-            ),
-          ],
+                ),
+              );
+            },
+          ),
+        ],
         ),
       ),
     );
@@ -471,8 +471,8 @@ class _HeaderCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final isCenter = label == 'ATTENDANCE' || label == 'GRADE' || label == 'ACTIONS';
     return Text(
-      label,
-      textAlign: isCenter ? TextAlign.center : TextAlign.start,
+        label,
+        textAlign: isCenter ? TextAlign.center : TextAlign.start,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: apple
@@ -486,7 +486,7 @@ class _HeaderCell extends StatelessWidget {
               fontWeight: FontWeight.w400,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
               letterSpacing: 1.05,
-            ),
+      ),
     );
   }
 }
@@ -537,13 +537,13 @@ class _StudentRowState extends State<_StudentRow> {
                   ),
                 ]
               : (_hovered
-                  ? [
-                      BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
+              ? [
+                  BoxShadow(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
                   : []),
         ),
         child: Padding(
@@ -553,35 +553,35 @@ class _StudentRowState extends State<_StudentRow> {
               // Name + Avatar
               SizedBox(
                 width: 200,
-                child: Row(
-                  children: [
-                    CircleAvatar(
+                  child: Row(
+                    children: [
+                      CircleAvatar(
                       radius: widget.apple ? 22 : 16,
                       backgroundColor: widget.apple ? accentColor.withOpacity(0.10) : accentColor.withOpacity(0.08),
-                      child: Text(
-                        student.fullName.split(' ').take(2).map((e) => e.isNotEmpty ? e[0].toUpperCase() : '').join(),
-                        style: TextStyle(
+                        child: Text(
+                          student.fullName.split(' ').take(2).map((e) => e.isNotEmpty ? e[0].toUpperCase() : '').join(),
+                          style: TextStyle(
                           color: Colors.black87,
                           fontSize: widget.apple ? 16 : 12,
-                          fontWeight: FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           letterSpacing: -0.5,
                         ),
                       ),
                     ),
                     const SizedBox(width: 14),
-                    Flexible(
-                      child: Text(
-                        student.fullName,
+                      Flexible(
+                        child: Text(
+                          student.fullName,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
                           fontSize: widget.apple ? 16 : null,
                           letterSpacing: widget.apple ? -0.2 : null,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
+                    ],
                 ),
               ),
               // Email
@@ -647,7 +647,7 @@ class _StudentRowState extends State<_StudentRow> {
                                     ),
                                   ],
                                 ),
-                                child: Text(
+                child: Text(
                                   subject,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w600,
@@ -655,8 +655,8 @@ class _StudentRowState extends State<_StudentRow> {
                                     color: Colors.black87,
                                     letterSpacing: -0.2,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                  overflow: TextOverflow.ellipsis,
+                ),
                               )),
                               if (showMore)
                                 Container(
@@ -685,23 +685,23 @@ class _StudentRowState extends State<_StudentRow> {
                 ),
               ),
               // Attendance
-              SizedBox(
+                SizedBox(
                 width: 120,
-                child: Text(
-                  '—',
+                  child: Text(
+                    '—',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
                 ),
               ),
               // Grade
-              SizedBox(
+                SizedBox(
                 width: 110,
-                child: Text(
-                  '—',
+                  child: Text(
+                    '—',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7)),
+                  ),
                 ),
-              ),
               // Actions
               SizedBox(
                 width: 100,
