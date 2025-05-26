@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:teacher_ai/features/exams/domain/models/exam_result.dart';
 import 'package:teacher_ai/features/exams/data/exam_repository.dart';
 import 'package:teacher_ai/features/exams/domain/models/exam.dart';
@@ -291,66 +292,103 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
     final late = attendanceRecords.where((a) => a.status == AttendanceStatus.late).length;
     final excused = attendanceRecords.where((a) => a.status == AttendanceStatus.excused).length;
     final total = attendanceRecords.length;
+    final values = [present, absent, late, excused];
+    final colors = [const Color(0xFF6EE7B7), const Color(0xFFFCA5A5), const Color(0xFFFDE68A), const Color(0xFF93C5FD)];
+    final labels = ['Present', 'Absent', 'Late', 'Excused'];
     final sections = [
       if (present > 0)
-        PieChartSectionData(color: const Color(0xFF6EE7B7), value: present.toDouble(), title: '', radius: 32),
+        PieChartSectionData(color: colors[0], value: present.toDouble(), title: '', radius: 32),
       if (absent > 0)
-        PieChartSectionData(color: const Color(0xFFFCA5A5), value: absent.toDouble(), title: '', radius: 32),
+        PieChartSectionData(color: colors[1], value: absent.toDouble(), title: '', radius: 32),
       if (late > 0)
-        PieChartSectionData(color: const Color(0xFFFDE68A), value: late.toDouble(), title: '', radius: 32),
+        PieChartSectionData(color: colors[2], value: late.toDouble(), title: '', radius: 32),
       if (excused > 0)
-        PieChartSectionData(color: const Color(0xFF93C5FD), value: excused.toDouble(), title: '', radius: 32),
+        PieChartSectionData(color: colors[3], value: excused.toDouble(), title: '', radius: 32),
     ];
     final legendItems = [
-      if (present > 0) _AppleLegendDot(color: const Color(0xFF6EE7B7), label: 'Present'),
-      if (absent > 0) _AppleLegendDot(color: const Color(0xFFFCA5A5), label: 'Absent'),
-      if (late > 0) _AppleLegendDot(color: const Color(0xFFFDE68A), label: 'Late'),
-      if (excused > 0) _AppleLegendDot(color: const Color(0xFF93C5FD), label: 'Excused'),
+      if (present > 0) _AppleLegendDot(color: colors[0], label: 'Present'),
+      if (absent > 0) _AppleLegendDot(color: colors[1], label: 'Absent'),
+      if (late > 0) _AppleLegendDot(color: colors[2], label: 'Late'),
+      if (excused > 0) _AppleLegendDot(color: colors[3], label: 'Excused'),
     ];
-    return Container(
-      constraints: const BoxConstraints(minHeight: 220),
-      child: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: SizedBox(
-                width: 110,
-                height: 110,
-                child: PieChart(
-                  PieChartData(
-                    sectionsSpace: 2,
-                    centerSpaceRadius: 36,
-                    sections: sections,
-                    borderData: FlBorderData(show: false),
-                  ),
-                  swapAnimationDuration: const Duration(milliseconds: 900),
-                  swapAnimationCurve: Curves.easeInOut,
-                ),
-              ),
-            ),
-            const SizedBox(width: 18),
-            Column(
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return Container(
+          constraints: const BoxConstraints(minHeight: 220),
+          child: Center(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                ...legendItems,
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: SizedBox(
+                    width: 110,
+                    height: 110,
+                    child: PieChart(
+                      PieChartData(
+                        sectionsSpace: 2,
+                        centerSpaceRadius: 36,
+                        sections: sections.map((section) {
+                          final isTouched = sections.indexOf(section) == touchedIndex;
+                          final double radius = isTouched ? 35 : 32;
+                          return PieChartSectionData(
+                            color: section.color,
+                            value: section.value,
+                            title: isTouched ? '${((section.value / total) * 100).toStringAsFixed(1)}%' : '',
+                            radius: radius,
+                            titleStyle: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black26,
+                                  blurRadius: 2,
+                                  offset: Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            titlePositionPercentageOffset: 0.5,
+                          );
+                        }).toList(),
+                        borderData: FlBorderData(show: false),
+                        pieTouchData: PieTouchData(
+                          touchCallback: (event, response) {
+                            setState(() {
+                              touchedIndex = response?.touchedSection?.touchedSectionIndex ?? -1;
+                            });
+                          },
+                          enabled: true,
+                        ),
+                      ),
+                      swapAnimationDuration: const Duration(milliseconds: 800),
+                      swapAnimationCurve: Curves.easeInOutCubic,
+                    ),
                   ),
-                  child: Text('Total: $total', style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(width: 18),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ...legendItems,
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text('Total: $total', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
