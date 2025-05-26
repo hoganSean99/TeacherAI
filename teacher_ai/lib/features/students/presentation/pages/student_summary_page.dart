@@ -9,6 +9,9 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math';
+import 'package:teacher_ai/features/exams/domain/models/exam_result.dart';
+import 'package:teacher_ai/features/exams/data/exam_repository.dart';
+import 'package:teacher_ai/features/exams/domain/models/exam.dart';
 
 class _GlassCard extends StatelessWidget {
   final Widget child;
@@ -48,6 +51,8 @@ class StudentSummaryPage extends StatefulWidget {
 class _StudentSummaryPageState extends State<StudentSummaryPage> {
   Student? student;
   List<Attendance> attendanceRecords = [];
+  List<ExamResult> examResults = [];
+  List<Exam> exams = [];
   bool isLoading = true;
   int touchedIndex = -1;
 
@@ -60,11 +65,22 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
   Future<void> _loadData() async {
     final isar = DatabaseService.instance;
     final studentRepo = StudentRepository(isar);
+    final examRepo = ExamRepository(isar);
     final s = await studentRepo.getStudentById(widget.studentId);
     final attendance = await isar.attendances.filter().studentIdEqualTo(widget.studentId).findAll();
+    final results = await examRepo.getResultsForStudent(widget.studentId);
+    // Fetch all related exams in one go
+    final examIds = results.map((r) => r.examId).toSet().toList();
+    final fetchedExams = <Exam>[];
+    for (final id in examIds) {
+      final exam = await examRepo.getExamById(id);
+      if (exam != null) fetchedExams.add(exam);
+    }
     setState(() {
       student = s;
       attendanceRecords = attendance;
+      examResults = results;
+      exams = fetchedExams;
       isLoading = false;
     });
   }
@@ -518,7 +534,6 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
         return LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth <= 600;
-            final cardMaxWidth = 360.0;
             if (isMobile) {
               // Stack vertically for small screens
               return Column(
@@ -531,28 +546,24 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
                 ],
               );
             } else {
-              // Always horizontally scrollable for non-mobile
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: cardMaxWidth, minWidth: 260),
-                      child: _GlassCard(child: _buildAssignedClassesCard(assignedClasses)),
-                    ),
-                    const SizedBox(width: 16),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: cardMaxWidth, minWidth: 260),
-                      child: _GlassCard(child: _buildExamResultsCard()),
-                    ),
-                    const SizedBox(width: 16),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: cardMaxWidth, minWidth: 260),
-                      child: _GlassCard(child: _buildAttendanceCard()),
-                    ),
-                  ],
-                ),
+              // Side by side for Assigned Classes and Attendance, Exam Results below
+              return Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _GlassCard(child: _buildAssignedClassesCard(assignedClasses)),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: _GlassCard(child: _buildAttendanceCard()),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _GlassCard(child: _buildExamResultsCard()),
+                ],
               );
             }
           },
@@ -588,6 +599,45 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
   }
 
   Widget _buildExamResultsCard() {
+    if (examResults.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Exam Results', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            const SizedBox(height: 14),
+            Container(
+              height: 120,
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.show_chart, size: 48, color: Colors.grey.withOpacity(0.25)),
+                  const SizedBox(height: 8),
+                  Text('No exam results yet', style: TextStyle(color: Colors.grey[500], fontSize: 15)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Pair results with their exams and sort by date
+    final resultExamPairs = examResults.map((r) {
+      final exam = exams.firstWhere((e) => e.id == r.examId, orElse: () => Exam.create(name: 'Unknown', classId: 0, className: '', date: DateTime(2000), userId: ''));
+      return {'result': r, 'exam': exam};
+    }).toList();
+    resultExamPairs.sort((a, b) => (a['exam'] as Exam).date.compareTo((b['exam'] as Exam).date));
+
+    final grades = resultExamPairs.map((pair) => (pair['result'] as ExamResult).grade ?? 0).toList();
+    final avg = grades.isNotEmpty ? (grades.reduce((a, b) => a + b) / grades.length) : 0.0;
+    final highest = grades.isNotEmpty ? grades.reduce((a, b) => a > b ? a : b) : 0.0;
+    final lowest = grades.isNotEmpty ? grades.reduce((a, b) => a < b ? a : b) : 0.0;
+
+    final dateFormat = DateFormat('yyyy-MM-dd');
+
     return Padding(
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -595,16 +645,109 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
         children: [
           const Text('Exam Results', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
           const SizedBox(height: 14),
-          Container(
-            height: 120,
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
               children: [
-                Icon(Icons.show_chart, size: 48, color: Colors.grey.withOpacity(0.25)),
-                const SizedBox(height: 8),
-                Text('No exam results yet', style: TextStyle(color: Colors.grey[500], fontSize: 15)),
+                _StatChip(
+                  label: 'Average',
+                  count: avg.round(),
+                  color: const Color(0xFF2979FF),
+                  icon: Icons.analytics,
+                ),
+                const SizedBox(width: 8),
+                _StatChip(
+                  label: 'Highest',
+                  count: highest.round(),
+                  color: const Color(0xFF4CAF50),
+                  icon: Icons.trending_up,
+                ),
+                const SizedBox(width: 8),
+                _StatChip(
+                  label: 'Lowest',
+                  count: lowest.round(),
+                  color: const Color(0xFFF44336),
+                  icon: Icons.trending_down,
+                ),
               ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 200,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(show: false),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 32,
+                      getTitlesWidget: (value, meta) => Text(
+                        value.toInt().toString(),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        // Only show a label if this value is an integer and matches an exam index
+                        if (value % 1 != 0 || value.toInt() < 0 || value.toInt() >= resultExamPairs.length) {
+                          return const SizedBox.shrink();
+                        }
+                        final exam = resultExamPairs[value.toInt()]['exam'] as Exam;
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            dateFormat.format(exam.date),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                borderData: FlBorderData(show: false),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: resultExamPairs.asMap().entries.map((entry) {
+                      return FlSpot(entry.key.toDouble(), (entry.value['result'] as ExamResult).grade ?? 0);
+                    }).toList(),
+                    isCurved: true,
+                    color: const Color(0xFF2979FF),
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(show: true),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: const Color(0xFF2979FF).withOpacity(0.12),
+                    ),
+                    showingIndicators: List.generate(resultExamPairs.length, (i) => i),
+                  ),
+                ],
+                minY: 0,
+                maxY: 100,
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    tooltipBgColor: Colors.white,
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        final idx = spot.x.toInt();
+                        final exam = resultExamPairs[idx]['exam'] as Exam;
+                        final result = resultExamPairs[idx]['result'] as ExamResult;
+                        return LineTooltipItem(
+                          '${exam.name}\n${dateFormat.format(exam.date)}\nGrade: ${result.grade?.toStringAsFixed(1) ?? '-'}',
+                          const TextStyle(color: Colors.black, fontWeight: FontWeight.w600, fontSize: 13),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
+              ),
             ),
           ),
         ],
@@ -663,18 +806,26 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      margin: const EdgeInsets.only(right: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(20),
+        color: color.withOpacity(0.13),
+        borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
-      children: [
-          Icon(icon, color: color, size: 18),
-        const SizedBox(width: 6),
-          Text('$label: ', style: TextStyle(color: color, fontWeight: FontWeight.w600)),
-          Text('$count', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
-      ],
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 6),
+          Text(
+            '$label: ',
+            style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 15),
+          ),
+          Text(
+            '$count',
+            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+        ],
       ),
     );
   }
