@@ -11,6 +11,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math';
 import 'package:teacher_ai/features/exams/domain/models/exam_result.dart';
 import 'package:teacher_ai/features/exams/data/exam_repository.dart';
+import 'package:teacher_ai/features/exams/domain/models/exam.dart';
 
 class _GlassCard extends StatelessWidget {
   final Widget child;
@@ -51,6 +52,7 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
   Student? student;
   List<Attendance> attendanceRecords = [];
   List<ExamResult> examResults = [];
+  List<Exam> exams = [];
   bool isLoading = true;
   int touchedIndex = -1;
 
@@ -67,10 +69,18 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
     final s = await studentRepo.getStudentById(widget.studentId);
     final attendance = await isar.attendances.filter().studentIdEqualTo(widget.studentId).findAll();
     final results = await examRepo.getResultsForStudent(widget.studentId);
+    // Fetch all related exams in one go
+    final examIds = results.map((r) => r.examId).toSet().toList();
+    final fetchedExams = <Exam>[];
+    for (final id in examIds) {
+      final exam = await examRepo.getExamById(id);
+      if (exam != null) fetchedExams.add(exam);
+    }
     setState(() {
       student = s;
       attendanceRecords = attendance;
       examResults = results;
+      exams = fetchedExams;
       isLoading = false;
     });
   }
@@ -524,7 +534,6 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
         return LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth <= 600;
-            final cardMaxWidth = 360.0;
             if (isMobile) {
               // Stack vertically for small screens
               return Column(
@@ -537,28 +546,24 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
                 ],
               );
             } else {
-              // Always horizontally scrollable for non-mobile
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: cardMaxWidth, minWidth: 260),
-                      child: _GlassCard(child: _buildAssignedClassesCard(assignedClasses)),
-                    ),
-                    const SizedBox(width: 16),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: cardMaxWidth, minWidth: 260),
-                      child: _GlassCard(child: _buildExamResultsCard()),
-                    ),
-                    const SizedBox(width: 16),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: cardMaxWidth, minWidth: 260),
-                      child: _GlassCard(child: _buildAttendanceCard()),
-                    ),
-                  ],
-                ),
+              // Side by side for Assigned Classes and Attendance, Exam Results below
+              return Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _GlassCard(child: _buildAssignedClassesCard(assignedClasses)),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: _GlassCard(child: _buildAttendanceCard()),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  _GlassCard(child: _buildExamResultsCard()),
+                ],
               );
             }
           },
@@ -619,11 +624,19 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
       );
     }
 
-    examResults.sort((a, b) => a.examId.compareTo(b.examId));
-    final grades = examResults.map((r) => r.grade ?? 0).toList();
+    // Pair results with their exams and sort by date
+    final resultExamPairs = examResults.map((r) {
+      final exam = exams.firstWhere((e) => e.id == r.examId, orElse: () => Exam.create(name: 'Unknown', classId: 0, className: '', date: DateTime(2000), userId: ''));
+      return {'result': r, 'exam': exam};
+    }).toList();
+    resultExamPairs.sort((a, b) => (a['exam'] as Exam).date.compareTo((b['exam'] as Exam).date));
+
+    final grades = resultExamPairs.map((pair) => (pair['result'] as ExamResult).grade ?? 0).toList();
     final avg = grades.isNotEmpty ? (grades.reduce((a, b) => a + b) / grades.length) : 0.0;
     final highest = grades.isNotEmpty ? grades.reduce((a, b) => a > b ? a : b) : 0.0;
     final lowest = grades.isNotEmpty ? grades.reduce((a, b) => a < b ? a : b) : 0.0;
+
+    final dateFormat = DateFormat('yyyy-MM-dd');
 
     return Padding(
       padding: const EdgeInsets.all(18),
@@ -661,7 +674,7 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 180,
+            height: 200,
             child: LineChart(
               LineChartData(
                 gridData: FlGridData(show: false),
@@ -680,11 +693,15 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
-                        if (value.toInt() >= examResults.length) return const Text('');
+                        // Only show a label if this value is an integer and matches an exam index
+                        if (value % 1 != 0 || value.toInt() < 0 || value.toInt() >= resultExamPairs.length) {
+                          return const SizedBox.shrink();
+                        }
+                        final exam = resultExamPairs[value.toInt()]['exam'] as Exam;
                         return Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Text(
-                            'Exam ${value.toInt() + 1}',
+                            dateFormat.format(exam.date),
                             style: const TextStyle(fontSize: 12),
                           ),
                         );
@@ -697,8 +714,8 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
                   LineChartBarData(
-                    spots: grades.asMap().entries.map((entry) {
-                      return FlSpot(entry.key.toDouble(), entry.value);
+                    spots: resultExamPairs.asMap().entries.map((entry) {
+                      return FlSpot(entry.key.toDouble(), (entry.value['result'] as ExamResult).grade ?? 0);
                     }).toList(),
                     isCurved: true,
                     color: const Color(0xFF2979FF),
@@ -709,10 +726,27 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
                       show: true,
                       color: const Color(0xFF2979FF).withOpacity(0.12),
                     ),
+                    showingIndicators: List.generate(resultExamPairs.length, (i) => i),
                   ),
                 ],
                 minY: 0,
                 maxY: 100,
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    tooltipBgColor: Colors.white,
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        final idx = spot.x.toInt();
+                        final exam = resultExamPairs[idx]['exam'] as Exam;
+                        final result = resultExamPairs[idx]['result'] as ExamResult;
+                        return LineTooltipItem(
+                          '${exam.name}\n${dateFormat.format(exam.date)}\nGrade: ${result.grade?.toStringAsFixed(1) ?? '-'}',
+                          const TextStyle(color: Colors.black, fontWeight: FontWeight.w600, fontSize: 13),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
               ),
             ),
           ),
