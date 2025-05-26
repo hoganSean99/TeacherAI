@@ -291,233 +291,66 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
     final late = attendanceRecords.where((a) => a.status == AttendanceStatus.late).length;
     final excused = attendanceRecords.where((a) => a.status == AttendanceStatus.excused).length;
     final total = attendanceRecords.length;
-    final percent = total == 0 ? 0.0 : (present / total) * 100;
     final sections = [
       if (present > 0)
-        PieChartSectionData(
-          color: const Color(0xFF6EE7B7),
-          value: present.toDouble(),
-          title: total > 0 ? '${((present / total) * 100).toStringAsFixed(0)}%' : '',
-          radius: touchedIndex == 0 ? 70 : 54,
-          showTitle: true,
-          titleStyle: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: Colors.grey[700]?.withOpacity(0.7),
-          ),
-          titlePositionPercentageOffset: 0.6,
-          badgeWidget: touchedIndex == 0 ? Container(
-            width: 0,
-            height: 0,
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.18),
-                  blurRadius: 18,
-                  spreadRadius: 2,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-          ) : null,
-          badgePositionPercentageOffset: touchedIndex == 0 ? 1.25 : 1.15,
-        ),
+        PieChartSectionData(color: const Color(0xFF6EE7B7), value: present.toDouble(), title: '', radius: 32),
       if (absent > 0)
-        PieChartSectionData(
-          color: const Color(0xFFFCA5A5),
-          value: absent.toDouble(),
-          title: total > 0 ? '${((absent / total) * 100).toStringAsFixed(0)}%' : '',
-          radius: touchedIndex == 1 ? 70 : 54,
-          showTitle: true,
-          titleStyle: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: Colors.grey[700]?.withOpacity(0.7),
-          ),
-          titlePositionPercentageOffset: 0.6,
-          badgeWidget: touchedIndex == 1 ? Container(
-            width: 0,
-            height: 0,
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.18),
-                  blurRadius: 18,
-                  spreadRadius: 2,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-          ) : null,
-          badgePositionPercentageOffset: touchedIndex == 1 ? 1.25 : 1.15,
-        ),
+        PieChartSectionData(color: const Color(0xFFFCA5A5), value: absent.toDouble(), title: '', radius: 32),
       if (late > 0)
-        PieChartSectionData(
-          color: const Color(0xFFFDE68A),
-          value: late.toDouble(),
-          title: total > 0 ? '${((late / total) * 100).toStringAsFixed(0)}%' : '',
-          radius: touchedIndex == 2 ? 70 : 54,
-          showTitle: true,
-          titleStyle: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: Colors.grey[700]?.withOpacity(0.7),
-          ),
-          titlePositionPercentageOffset: 0.6,
-          badgeWidget: touchedIndex == 2 ? Container(
-            width: 0,
-            height: 0,
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.18),
-                  blurRadius: 18,
-                  spreadRadius: 2,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-          ) : null,
-          badgePositionPercentageOffset: touchedIndex == 2 ? 1.25 : 1.15,
-        ),
+        PieChartSectionData(color: const Color(0xFFFDE68A), value: late.toDouble(), title: '', radius: 32),
       if (excused > 0)
-        PieChartSectionData(
-          color: const Color(0xFF93C5FD),
-          value: excused.toDouble(),
-          title: total > 0 ? '${((excused / total) * 100).toStringAsFixed(0)}%' : '',
-          radius: touchedIndex == 3 ? 70 : 54,
-          showTitle: true,
-          titleStyle: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: Colors.grey[700]?.withOpacity(0.7),
-          ),
-          titlePositionPercentageOffset: 0.6,
-          badgeWidget: touchedIndex == 3 ? Container(
-            width: 0,
-            height: 0,
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.18),
-                  blurRadius: 18,
-                  spreadRadius: 2,
-                  offset: Offset(0, 4),
-                ),
-              ],
-            ),
-          ) : null,
-          badgePositionPercentageOffset: touchedIndex == 3 ? 1.25 : 1.15,
-        ),
+        PieChartSectionData(color: const Color(0xFF93C5FD), value: excused.toDouble(), title: '', radius: 32),
     ];
     final legendItems = [
-      if (present > 0) _LegendItem(color: const Color(0xFF6EE7B7), label: 'Present'),
-      if (absent > 0) _LegendItem(color: const Color(0xFFFCA5A5), label: 'Absent'),
-      if (late > 0) _LegendItem(color: const Color(0xFFFDE68A), label: 'Late'),
-      if (excused > 0) _LegendItem(color: const Color(0xFF93C5FD), label: 'Excused'),
+      if (present > 0) _AppleLegendDot(color: const Color(0xFF6EE7B7), label: 'Present'),
+      if (absent > 0) _AppleLegendDot(color: const Color(0xFFFCA5A5), label: 'Absent'),
+      if (late > 0) _AppleLegendDot(color: const Color(0xFFFDE68A), label: 'Late'),
+      if (excused > 0) _AppleLegendDot(color: const Color(0xFF93C5FD), label: 'Excused'),
     ];
-    return StatefulBuilder(
-      builder: (context, setState) {
-        return Column(
+    return Container(
+      constraints: const BoxConstraints(minHeight: 220),
+      child: Center(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: SizedBox(
-                  height: 200,
-                  width: 200,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      MouseRegion(
-                        onHover: (event) {
-                          final box = context.findRenderObject() as RenderBox?;
-                          if (box == null) return;
-                          final local = box.globalToLocal(event.position);
-                          final center = Offset(box.size.width / 2, box.size.height / 2);
-                          final dx = local.dx - center.dx;
-                          final dy = local.dy - center.dy;
-                          final distance = sqrt(dx * dx + dy * dy);
-                          // Only react if pointer is within the pie radius (adjust as needed)
-                          if (distance < 100 && distance > 60) {
-                            double angle = atan2(dy, dx);
-                            if (angle < 0) angle += 2 * pi;
-                            double total = (present + absent + late + excused).toDouble();
-                            List<double> values = [present.toDouble(), absent.toDouble(), late.toDouble(), excused.toDouble()];
-                            int section = -1;
-                            double start = 0.0;
-                            for (int i = 0; i < values.length; i++) {
-                              double sweep = (values[i] / total) * 2 * pi;
-                              if (angle >= start && angle < start + sweep) {
-                                section = i;
-                                break;
-                              }
-                              start += sweep;
-                            }
-                            if (section != touchedIndex) setState(() => touchedIndex = section);
-                          } else {
-                            if (touchedIndex != -1) setState(() => touchedIndex = -1);
-                          }
-                        },
-                        onExit: (_) {
-                          if (touchedIndex != -1) setState(() => touchedIndex = -1);
-                        },
-                        child: PieChart(
-                          PieChartData(
-                            sectionsSpace: 2,
-                            centerSpaceRadius: 60,
-                            sections: sections,
-                            borderData: FlBorderData(show: false),
-                            pieTouchData: PieTouchData(
-                              touchCallback: (event, response) {
-                                setState(() {
-                                  touchedIndex = response?.touchedSection?.touchedSectionIndex ?? -1;
-                                });
-                              },
-                            ),
-                          ),
-                          swapAnimationDuration: const Duration(milliseconds: 900),
-                          swapAnimationCurve: Curves.easeInOut,
-                        ),
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Attendance',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.grey[700],
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ],
-                      ), 
-                    ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: SizedBox(
+                width: 110,
+                height: 110,
+                child: PieChart(
+                  PieChartData(
+                    sectionsSpace: 2,
+                    centerSpaceRadius: 36,
+                    sections: sections,
+                    borderData: FlBorderData(show: false),
                   ),
+                  swapAnimationDuration: const Duration(milliseconds: 900),
+                  swapAnimationCurve: Curves.easeInOut,
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
+            const SizedBox(width: 18),
+            Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: legendItems,
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text('Total: $total', style: const TextStyle(fontWeight: FontWeight.bold)),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...legendItems,
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text('Total: $total', style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -573,27 +406,76 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
   }
 
   Widget _buildAssignedClassesCard(List<String> classes) {
+    final grades = examResults.map((r) => r.grade ?? 0).toList();
+    final avgExam = grades.isNotEmpty ? (grades.reduce((a, b) => a + b) / grades.length) : 0.0;
+    final present = attendanceRecords.where((a) => a.status == AttendanceStatus.present).length;
+    final avgAttendance = attendanceRecords.isNotEmpty ? (present / attendanceRecords.length) * 100 : 0.0;
     return Padding(
       padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Assigned Classes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 14),
-          if (classes.isEmpty)
-            const Text('No assigned classes', style: TextStyle(color: Colors.grey, fontSize: 15)),
-          if (classes.isNotEmpty)
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: classes.map((c) => Chip(
-                label: Text(c, style: const TextStyle(fontWeight: FontWeight.w600)),
-                backgroundColor: Colors.white.withOpacity(0.7),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                side: BorderSide(color: Colors.grey.withOpacity(0.15)),
-              )).toList(),
+      child: SizedBox(
+        height: 200,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Averages', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+            Expanded(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(Icons.bar_chart_rounded, color: Colors.grey[400], size: 32),
+                        const SizedBox(height: 6),
+                        Text(
+                          avgExam.isNaN ? '-' : '${avgExam.toStringAsFixed(1)}%',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black.withOpacity(0.85),
+                            letterSpacing: -1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text('Avg Exam', style: TextStyle(fontSize: 15, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    width: 1.2,
+                    height: 48,
+                    margin: const EdgeInsets.symmetric(horizontal: 14),
+                    color: Colors.grey[200],
+                  ),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Icon(Icons.check_circle_rounded, color: Colors.grey[400], size: 32),
+                        const SizedBox(height: 6),
+                        Text(
+                          avgAttendance.isNaN ? '-' : '${avgAttendance.toStringAsFixed(1)}%',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black.withOpacity(0.85),
+                            letterSpacing: -1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text('Avg Attendance', style: TextStyle(fontSize: 15, color: Colors.grey[600], fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -651,7 +533,7 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
               children: [
                 _StatChip(
                   label: 'Average',
-                  count: avg.round(),
+                  countStr: avg.toStringAsFixed(1),
                   color: const Color(0xFF2979FF),
                   icon: Icons.analytics,
                 ),
@@ -758,39 +640,44 @@ class _StudentSummaryPageState extends State<StudentSummaryPage> {
   Widget _buildAttendanceCard() {
     return Padding(
       padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Attendance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const SizedBox(height: 14),
-          _buildAttendanceChartAndSummary(),
-        ],
+      child: SizedBox(
+        height: 200,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Attendance', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+            const SizedBox(height: 10),
+            Expanded(
+              child: _buildAttendanceChartAndSummary(),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _LegendItem extends StatelessWidget {
+class _AppleLegendDot extends StatelessWidget {
   final Color color;
   final String label;
-  const _LegendItem({required this.color, required this.label});
+  const _AppleLegendDot({required this.color, required this.label});
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
-      children: [
+        children: [
           Container(
-            width: 14,
-            height: 14,
+            width: 12,
+            height: 12,
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: color.withOpacity(0.3), blurRadius: 4)],
+              boxShadow: [BoxShadow(color: color.withOpacity(0.18), blurRadius: 4)],
             ),
           ),
-          const SizedBox(width: 6),
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          const SizedBox(width: 8),
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 15, color: Colors.black87)),
         ],
       ),
     );
@@ -799,10 +686,11 @@ class _LegendItem extends StatelessWidget {
 
 class _StatChip extends StatelessWidget {
   final String label;
-  final int count;
+  final int? count;
+  final String? countStr;
   final Color color;
   final IconData icon;
-  const _StatChip({required this.label, required this.count, required this.color, required this.icon});
+  const _StatChip({required this.label, this.count, this.countStr, required this.color, required this.icon});
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -822,7 +710,7 @@ class _StatChip extends StatelessWidget {
             style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 15),
           ),
           Text(
-            '$count',
+            countStr ?? (count?.toString() ?? '-'),
             style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 15),
           ),
         ],
