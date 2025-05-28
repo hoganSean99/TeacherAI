@@ -14,6 +14,7 @@ import 'package:teacher_ai/features/students/data/repositories/student_repositor
 import 'package:isar/isar.dart';
 import 'package:teacher_ai/features/attendance/presentation/pages/attendance_page.dart';
 import 'package:teacher_ai/features/exams/presentation/pages/exams_page.dart';
+import 'package:teacher_ai/features/home/presentation/pages/clear_data_page.dart';
 
 final goRouter = GoRouter(
   initialLocation: '/login',
@@ -72,6 +73,10 @@ final goRouter = GoRouter(
         GoRoute(
           path: '/exams',
           builder: (context, state) => const ExamsPage(),
+        ),
+        GoRoute(
+          path: '/test-clear-data',
+          builder: (context, state) => const ClearDataPage(),
         ),
       ],
     ),

@@ -3,12 +3,16 @@ import 'package:teacher_ai/features/core/domain/models/subject.dart';
 import 'package:teacher_ai/features/core/domain/models/student.dart';
 import 'package:teacher_ai/features/subjects/data/subject_repository.dart';
 import 'package:teacher_ai/features/students/data/repositories/student_repository.dart';
+import 'package:teacher_ai/features/exams/data/exam_repository.dart';
+import 'package:teacher_ai/features/exams/domain/models/exam.dart';
+import 'package:teacher_ai/features/exams/domain/models/exam_result.dart';
 import 'package:isar/isar.dart';
 import 'package:teacher_ai/core/services/database_service.dart';
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:teacher_ai/core/providers/providers.dart';
 import 'package:teacher_ai/features/core/domain/models/attendance.dart';
+import 'package:teacher_ai/features/students/presentation/pages/student_summary_page.dart';
 
 class ClassDashboardPage extends ConsumerStatefulWidget {
   final ClassYear year;
@@ -33,10 +37,15 @@ class AttendanceSummary {
 class _ClassDashboardPageState extends ConsumerState<ClassDashboardPage> {
   late final SubjectRepository subjectRepository;
   late final StudentRepository studentRepository;
+  late final ExamRepository examRepository;
   List<Subject> subjects = [];
   List<Student> students = [];
   bool isLoading = true;
   AttendanceSummary? attendanceSummary;
+  double gradeAvg = 0.0;
+  List<Exam> yearExams = [];
+  String bestStudent = '-';
+  String worstStudent = '-';
 
   @override
   void initState() {
@@ -44,6 +53,7 @@ class _ClassDashboardPageState extends ConsumerState<ClassDashboardPage> {
     final isar = DatabaseService.instance;
     subjectRepository = SubjectRepository(isar);
     studentRepository = StudentRepository(isar);
+    examRepository = ExamRepository(isar);
     _loadData();
   }
 
@@ -52,11 +62,65 @@ class _ClassDashboardPageState extends ConsumerState<ClassDashboardPage> {
       isLoading = true;
     });
     try {
+      final currentUser = ref.read(currentUserProvider);
+      if (currentUser == null) {
+        throw Exception('No user logged in');
+      }
+
       final allSubjects = await subjectRepository.getAllSubjects();
       final allStudents = await studentRepository.getAllStudents();
       final yearSubjects = allSubjects.where((s) => s.year == widget.year).toList();
       final yearStudentIds = yearSubjects.expand((subject) => subject.studentIds).toSet();
       final yearStudents = allStudents.where((student) => yearStudentIds.contains(student.id)).toList();
+      
+      // Load exam data
+      final allExams = await examRepository.getExamsByUserId(currentUser.uuid);
+      yearExams = allExams.where((e) => yearSubjects.any((s) => s.id == e.classId)).toList();
+      
+      // Calculate average grade
+      double totalGrade = 0;
+      int gradeCount = 0;
+      for (final exam in yearExams) {
+        final results = await examRepository.getResultsForExam(exam.id);
+        for (final result in results) {
+          if (result.grade != null) {
+            totalGrade += result.grade!;
+            gradeCount++;
+          }
+        }
+      }
+      final calculatedGradeAvg = gradeCount > 0 ? totalGrade / gradeCount : 0.0;
+
+      // Calculate best/worst student by average grade
+      Map<int, List<double>> studentGrades = {};
+      for (final exam in yearExams) {
+        final results = await examRepository.getResultsForExam(exam.id);
+        for (final result in results) {
+          if (result.grade != null) {
+            studentGrades.putIfAbsent(result.studentId, () => []).add(result.grade!);
+          }
+        }
+      }
+      Map<int, double> studentAverages = {
+        for (var entry in studentGrades.entries)
+          entry.key: entry.value.reduce((a, b) => a + b) / entry.value.length
+      };
+      if (studentAverages.isNotEmpty) {
+        final bestId = studentAverages.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+        final worstId = studentAverages.entries.reduce((a, b) => a.value <= b.value ? a : b).key;
+        bestStudent = students.firstWhere(
+          (s) => s.id == bestId,
+          orElse: () => Student(firstName: '-', lastName: '', email: '', userId: ''),
+        ).fullName;
+        worstStudent = students.firstWhere(
+          (s) => s.id == worstId,
+          orElse: () => Student(firstName: '-', lastName: '', email: '', userId: ''),
+        ).fullName;
+      } else {
+        bestStudent = '-';
+        worstStudent = '-';
+      }
+
       // Attendance summary logic
       final isar = DatabaseService.instance;
       final subjectIds = yearSubjects.map((s) => s.id).toList();
@@ -71,6 +135,7 @@ class _ClassDashboardPageState extends ConsumerState<ClassDashboardPage> {
         subjects = yearSubjects;
         students = yearStudents;
         attendanceSummary = summary;
+        gradeAvg = calculatedGradeAvg;
         isLoading = false;
       });
     } catch (e) {
@@ -109,10 +174,12 @@ class _ClassDashboardPageState extends ConsumerState<ClassDashboardPage> {
     final className = subjects.isNotEmpty ? subjects.first.name : 'Class';
     final yearLabel = _getYearLabel(widget.year);
     final assignmentCount = 3;
-    final upcomingDate = '2024-06-15';
-    final bestStudent = students.isNotEmpty ? students.first.fullName : '-';
-    final worstStudent = students.isNotEmpty ? students.last.fullName : '-';
-    final gradeAvg = 78.5;
+    final examCount = yearExams.length;
+    final now = DateTime.now();
+    final nextExam = (yearExams.isNotEmpty)
+        ? (yearExams.where((e) => e.date.isAfter(now)).toList()..sort((a, b) => a.date.compareTo(b.date))).firstOrNull
+        : null;
+    final upcomingDate = nextExam != null ? nextExam.date.toIso8601String().split('T').first : 'None';
     final totalAttendance = (attendanceSummary?.present ?? 0) + (attendanceSummary?.absent ?? 0) + (attendanceSummary?.late ?? 0) + (attendanceSummary?.excused ?? 0);
     final attendanceAvg = totalAttendance > 0 ? ((attendanceSummary?.present ?? 0) / totalAttendance * 100) : 0.0;
 
@@ -263,23 +330,6 @@ class _ClassDashboardPageState extends ConsumerState<ClassDashboardPage> {
                   ],
                 ),
               ),
-              if (attendanceSummary != null) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Row(
-                    children: [
-                      _appleChip(Icons.check_circle, attendanceSummary!.present, Colors.green[400]!),
-                      const SizedBox(width: 6),
-                      _appleChip(Icons.cancel, attendanceSummary!.absent, Colors.red[400]!),
-                      const SizedBox(width: 6),
-                      _appleChip(Icons.access_time, attendanceSummary!.late, Colors.orange[400]!),
-                      const SizedBox(width: 6),
-                      _appleChip(Icons.info, attendanceSummary!.excused, Colors.blue[400]!),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
               // Key Info
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -307,7 +357,7 @@ class _ClassDashboardPageState extends ConsumerState<ClassDashboardPage> {
                           children: [
                             _InfoTile(label: 'Teacher', value: teacherName, icon: Icons.person),
                             _InfoTile(label: 'Students', value: students.length.toString(), icon: Icons.people),
-                            _InfoTile(label: 'Exams', value: assignmentCount.toString(), icon: Icons.description),
+                            _InfoTile(label: 'Exams', value: examCount.toString(), icon: Icons.description),
                             _InfoTile(label: 'Upcoming', value: upcomingDate, icon: Icons.event),
                           ],
                         ),
@@ -396,7 +446,13 @@ class _ClassDashboardPageState extends ConsumerState<ClassDashboardPage> {
                             title: Text(student.fullName, style: const TextStyle(fontWeight: FontWeight.w600)),
                             subtitle: Text(student.email),
                             trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => StudentSummaryPage(studentId: student.id),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),

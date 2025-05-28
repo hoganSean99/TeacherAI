@@ -6,6 +6,7 @@ import 'package:teacher_ai/features/core/domain/models/student.dart';
 import 'package:teacher_ai/features/core/domain/models/attendance.dart';
 import 'package:teacher_ai/features/exams/domain/models/exam.dart';
 import 'package:teacher_ai/features/exams/domain/models/exam_result.dart';
+import 'package:teacher_ai/features/home/domain/models/custom_event.dart';
 
 class DatabaseService {
   static late Isar _isar;
@@ -33,9 +34,22 @@ class DatabaseService {
         AttendanceSchema,
         ExamSchema,
         ExamResultSchema,
+        CustomEventSchema,
       ],
       directory: dir.path,
     );
     _initialized = true;
+  }
+
+  static Future<void> clearUserData() async {
+    await _isar.writeTxn(() async {
+      await _isar.subjects.clear();
+      await _isar.students.clear();
+      await DatabaseService.attendance.clear();
+      await _isar.exams.clear();
+      await _isar.examResults.clear();
+      await _isar.customEvents.clear();
+      // Do NOT clear users or other metadata collections
+    });
   }
 } 

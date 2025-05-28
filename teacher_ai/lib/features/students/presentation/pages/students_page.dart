@@ -261,12 +261,10 @@ class _AddStudentDialogState extends State<_AddStudentDialog> {
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _subjectsController = TextEditingController();
 
   String? _firstNameError;
   String? _lastNameError;
   String? _emailError;
-  String? _subjectsError;
   bool _submitted = false;
 
   @override
@@ -277,7 +275,6 @@ class _AddStudentDialogState extends State<_AddStudentDialog> {
       _firstNameController.text = s.firstName;
       _lastNameController.text = s.lastName;
       _emailController.text = s.email;
-      _subjectsController.text = s.subjects ?? '';
     }
   }
 
@@ -286,7 +283,6 @@ class _AddStudentDialogState extends State<_AddStudentDialog> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
-    _subjectsController.dispose();
     super.dispose();
   }
 
@@ -302,9 +298,8 @@ class _AddStudentDialogState extends State<_AddStudentDialog> {
       _firstNameError = _firstNameController.text.trim().isEmpty ? 'Enter first name' : null;
       _lastNameError = _lastNameController.text.trim().isEmpty ? 'Enter last name' : null;
       _emailError = _emailController.text.trim().isEmpty ? 'Enter an email' : null;
-      _subjectsError = _subjectsController.text.trim().isEmpty ? 'Enter at least one subject' : null;
     });
-    if (_formKey.currentState?.validate() ?? false && _firstNameError == null && _lastNameError == null && _emailError == null && _subjectsError == null) {
+    if (_formKey.currentState?.validate() ?? false && _firstNameError == null && _lastNameError == null && _emailError == null) {
       if (widget.currentUser == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('No user logged in')),
@@ -317,7 +312,6 @@ class _AddStudentDialogState extends State<_AddStudentDialog> {
         lastName: _lastNameController.text.trim(),
         email: _emailController.text.trim(),
         userId: widget.currentUser.uuid,
-        subjects: _subjectsController.text.trim(),
         dateOfBirth: widget.student?.dateOfBirth,
         phoneNumber: widget.student?.phoneNumber,
         address: widget.student?.address,
@@ -417,19 +411,6 @@ class _AddStudentDialogState extends State<_AddStudentDialog> {
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: _subjectsController,
-                  decoration: InputDecoration(
-                    labelText: 'Subjects',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    errorText: _submitted ? _subjectsError : null,
-                    prefixIcon: const Icon(Icons.book_outlined),
-                    helperText: 'Separate multiple subjects with commas',
-                  ),
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _submit(),
                 ),
                 const SizedBox(height: 22),
                 Row(

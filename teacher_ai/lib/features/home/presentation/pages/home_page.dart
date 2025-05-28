@@ -45,6 +45,9 @@ class HomePage extends StatelessWidget {
                   case 6:
                     context.go('/settings');
                     break;
+                  case 7:
+                    context.go('/test-clear-data');
+                    break;
                 }
               },
             ),
@@ -119,6 +122,7 @@ class HomePage extends StatelessWidget {
     if (location.startsWith('/exams')) return 4;
     if (location.startsWith('/calendar')) return 5;
     if (location.startsWith('/settings')) return 6;
+    if (location.startsWith('/test-clear-data')) return 7;
     return 0;
   }
 
