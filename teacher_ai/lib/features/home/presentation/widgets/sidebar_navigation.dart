@@ -20,6 +20,7 @@ const List<_NavItem> _navItems = [
   _NavItem(Icons.description_outlined, 'Exams'),
   _NavItem(Icons.calendar_month_outlined, 'Calendar'),
   _NavItem(Icons.settings_suggest_outlined, 'Settings'),
+  _NavItem(Icons.bug_report_outlined, 'Test (Clear Data)'),
 ];
 
 class SidebarNavigation extends ConsumerWidget {
