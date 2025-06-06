@@ -1,14 +1,15 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-// Conditional import for web platform
-import 'exam_csv_download_helper_web.dart' if (dart.library.io) 'exam_csv_download_helper_stub.dart';
+// Conditional import providing the platform-specific implementation.
+import 'exam_csv_download_helper_web.dart'
+    if (dart.library.io) 'exam_csv_download_helper_stub.dart' as helper;
 
+/// Download a CSV file when running on the web platform.
+///
+/// On non-web platforms this function does nothing and the CSV
+/// is saved using the standard file system APIs instead.
 void downloadCSVWeb(String csv, String fileName) {
   if (kIsWeb) {
-    // Web implementation is in exam_csv_download_helper_web.dart
-    downloadCSVWeb(csv, fileName);
+    helper.downloadCSVWeb(csv, fileName);
   }
-  // Non-web platforms will use the existing file system implementation
-  // This is handled in the ExamDashboardPage's _exportCSV method
-} 
+}
